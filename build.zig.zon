@@ -1,0 +1,21 @@
+.{
+    .name = .plasma,
+    .version = "0.0.0",
+    .fingerprint = 0xd9e93465f14e5aa5,
+    .minimum_zig_version = "0.17.0",
+    .dependencies = .{
+        .@"aws-lc" = .{
+            .url = "https://github.com/aws/aws-lc/archive/refs/tags/v5.12.0.tar.gz",
+            .hash = "N-V-__8AAIc07hKsDpfYP-HA8bzKWpspXwegv9lKzxDmoM_6",
+        },
+        .mimalloc = .{
+            .url = "https://github.com/microsoft/mimalloc/archive/refs/tags/v3.6.1.tar.gz",
+            .hash = "N-V-__8AAJOFYQBE7uHkD0oSErMR1VLZCwa488H-Gf49jF5G",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}
