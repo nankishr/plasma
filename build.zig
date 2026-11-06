@@ -1,7 +1,5 @@
 const std = @import("std");
 
-const awslc = @import("build/awslc/awslc.zig");
-
 pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
@@ -21,25 +19,16 @@ pub fn build(b: *std.Build) void {
 
     exe.lto = if (is_dev) .none else .full;
 
-    const awslc_dep = b.dependency("aws-lc", .{});
+    const awslc_dep = b.dependency("aws_lc_zig", .{
+        .target = target,
+        .optimize = optimize,
+        .ssl = false
+    });
 
-    addVendorStep(b, awslc_dep);
+    const crypto = awslc_dep.artifact("crypto");
 
-    const libs = awslc.build(b, target, awslc_dep) catch |err| {
-        std.debug.panic("aws-lc: {s}", .{@errorName(err)});
-    };
+    exe.root_module.linkLibrary(crypto);
 
-    if (libs) |l| {
-        exe.root_module.addIncludePath(awslc_dep.path("include"));
-        exe.root_module.linkLibrary(l.crypto);
-        exe.root_module.linkLibrary(l.ssl);
-    } else {
-        const fail = b.addFail(b.fmt("No vendored sources for {s}-{s}", .{
-            @tagName(target.result.cpu.arch),
-            @tagName(target.result.os.tag),
-        }));
-        exe.step.dependOn(&fail.step);
-    }
 
     const mimalloc_dep = b.dependency("mimalloc", .{});
     exe.root_module.addIncludePath(mimalloc_dep.path("include"));
@@ -76,18 +65,4 @@ pub fn build(b: *std.Build) void {
     run_step.dependOn(&run_cmd.step);
 
     run_cmd.step.dependOn(b.getInstallStep());
-}
-
-fn addVendorStep(b: *std.Build, awslc_dep: *std.Build.Dependency) void {
-    const run = b.addSystemCommand(&.{"python3"});
-    run.addFileArg(b.path("scripts/vendor.py"));
-    run.addArgs(&.{ "awslc", "--zig", b.graph.zig_exe, "--src" });
-    run.addDirectoryArg2(awslc_dep.path("."), .{});
-    run.addArg("--out");
-    run.addDirectoryArg2(b.path("build/awslc"), .{});
-    run.has_side_effects = true;
-    run.stdio = .inherit;
-
-    const step = b.step("vendor", "Regenerate vendored source lists");
-    step.dependOn(&run.step);
 }
